@@ -68,7 +68,7 @@
           userDataSocket = new WebSocket(socketUrl + "data/" + user + "/");
           userDataSocket.onmessage = (e) => {
             let data = JSON.parse(e.data);
-            console.log("Received data", data);
+            console.log("Received data = ", data);
           };
         }
       });
