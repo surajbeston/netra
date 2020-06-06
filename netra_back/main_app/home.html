@@ -1,0 +1,173 @@
+<html>
+    <head>
+        <title>Netra</title>
+    </head>
+    <body>
+        {{ id|json_script:"id" }}
+
+        <h1 id = "identity"></h1>
+
+        <textarea id="data-log" cols="100" rows="20"></textarea>
+
+        <div id = "cord_contain">
+            <label>Longitude: </label><input id = "longitude" type = "text" value = "Not now"> <br>
+            <label>Latitude: </label><input id = "latitude" type = "text" value = "Not now"> <br>
+            <label>Teperature: </label><input id = "temperature" type = "text" value = "Not now"> <br>
+            <label>Altitude: </label><input id = "altitude" type = "text" value = "Not now"> <br>
+        </div>
+        <button id = "btn" onclick="clicked()">Mono</button>
+        <hr>
+        <hr>
+        <h2>Fleet</h2>
+
+        <label>Fleet ID: </label><input id = "fleet_id" type = "text" value = "Not now"> <br>
+        <label>Drone ID: </label><input id = "drone_id" type = "text" value = "Not now"> <br>
+
+        <br>
+
+        <button id = "btn1" onclick="fleeter()">Fleet</button>
+
+    
+        <script>
+            const id = JSON.parse(document.getElementById('id').textContent);
+
+            console.log(id)
+
+            document.querySelector("#identity").innerHTML = id;
+
+            var already_once = false;
+
+
+            //first step: yesle euta socket banaunxa server sanga jasko through initially data haru save huna lae pathainxa 
+            const initSocket = new WebSocket(
+            'ws://'      // yesko link ws://68.183.89.213/ws/connection/sdkfjgsd/ hunna janxa ra yo personal channel ho group hoina yahan peronal info haru share hunxa
+            + window.location.host
+            + '/ws/connection/'
+            + id
+            + '/'
+            );
+
+            //third step: second step ma data pathaye paxi aaba server le baanki wori paari bhayeko top 5 wota drone id pathaunxa "user_arr" ma
+            initSocket.onmessage = function(e) {
+                console.log("message received");
+                const data = JSON.parse(e.data);
+
+                console.log(data)
+                if (data["user_arr"].length > 1){
+                    console.log("got here")
+                    ///fourth step: aayeko user haruko group ma subscribe garinxa ran aafai pani broadcast garinxa 
+                    get_relayed(data)
+                }
+            };
+
+            initSocket.onclose = function(e) {
+                console.error('Chat socket closed unexpectedly');
+            };
+
+            function clicked(element){
+                ///second step: button click bhayesi form ma bhako data pathainxa
+                console.log("clicked")
+                    initSocket.send(JSON.stringify({
+                    "status": 200,
+                    '_id': id,
+                    'longitude': document.querySelector("#longitude").value,
+                    'latitude': document.querySelector("#latitude").value,
+                    'temperature': document.querySelector("#temperature").value,
+                    'altitude': document.querySelector("#altitude").value
+                    }))
+            }
+
+            function get_relayed(data){
+                console.log("got here too")
+            
+                var repeater = new WebSocket( /// yo chai aafno group ho broadcast garna lae
+                        'ws://'   ///yesko link ws://68.183.89.213/ws/data/sdfhkdkfjsdf/ huna janxa jasle group ma broadcast garna garxa
+                        + window.location.host
+                        + '/ws/data/'
+                        + id
+                        + '/'
+                    )
+
+                repeater.onmessage = function(e){
+                    console.log("own repeated");
+                    const data = JSON.parse(e.data);
+                    console.log(data);
+
+                    repeater.send(JSON.stringify({  
+                    "status": 200,
+                    '_id': id,
+                    'longitude': document.querySelector("#longitude").value,
+                    'latitude': document.querySelector("#latitude").value,
+                    'temperature': document.querySelector("#temperature").value,
+                    'altitude': document.querySelector("#altitude").value
+                    }))
+                }
+
+
+                for(var user of data["user_arr"]){ /// yo chae loop chalako aayeko list ko id haruko broadcast sunnalae
+                    if (user !== id){
+                    new WebSocket(
+                        'ws://'
+                        + window.location.host
+                        + '/ws/data/'
+                        + user
+                        + '/'
+                    ).onmessage = function(e){
+                        console.log("message received");
+                        const data = JSON.parse(e.data);
+                        console.log(data);
+                    }
+                    console.log("started "+ user)
+                }
+            }
+        }
+
+
+
+
+        function fleeter(){
+            var fleet_id = document.querySelector("#fleet_id").value;
+            var drone_id = document.querySelector("#drone_id").value;
+            var permittable = false
+
+            var fleetSock = new WebSocket( /// yo chai aafno fleet ho broadcast garna lae
+                        'ws://'   ///yesko link ws://68.183.89.213/ws/data/sdfhkdkfjsdf/ huna janxa jasle group ma broadcast garna garxa
+                        + window.location.host
+                        + '/ws/fleet/'
+                        + fleet_id
+                        + '/'
+                        + drone_id
+                        + '/'
+                    )
+            fleetSock.onopen = (e) => {
+                permittable = true
+                fleetSock.send(JSON.stringify({"status": 200,
+                    'fleet_id': fleet_id,
+                    '_id': drone_id,
+                    'longitude': document.querySelector("#longitude").value,
+                    'latitude': document.querySelector("#latitude").value,
+                    'temperature': document.querySelector("#temperature").value,
+                    'altitude': document.querySelector("#altitude").value}))
+                console.log("data sent")
+            }
+
+
+            fleetSock.onmessage = (e) => {
+                console.log("message received");
+                        const data = JSON.parse(e.data);
+                        console.log(data);
+                        if (data._id == drone_id){
+                            fleetSock.send(JSON.stringify({"status": 200,
+                            'fleet_id': fleet_id,
+                            '_id': drone_id,
+                            'longitude': document.querySelector("#longitude").value,
+                            'latitude': document.querySelector("#latitude").value,
+                            'temperature': document.querySelector("#temperature").value,
+                            'altitude': document.querySelector("#altitude").value}))
+                        }
+                    }
+            
+        }
+        </script>
+    </body>
+</html>    
