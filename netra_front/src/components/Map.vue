@@ -12,14 +12,14 @@
           <a href = "#" id = "toggle" @click = "toggle_mode"> {{mode}} </a>
           <label class="label-heading">Your data</label>
           <div class="my-info-card card">
-              <!-- oops! same code repeated, why dont you use a function ? -->
-              <!-- yeah i'm lazy, Sorry! "dont argue just modify"-->
-             <!--  make a list and iterate -->
+            <!-- oops! same code repeated, why dont you use a function ? -->
+            <!-- yeah i'm lazy, Sorry! "dont argue just modify"-->
+            <!--  make a list and iterate -->
             <p>
-              <label class="label-inside">LAT {{ myFlyingObject.latitude }}</label>
+              <label class="label-inside">LAT {{ userLocation[0] }}</label>
             </p>
             <p>
-              <label class="label-inside">LON {{ myFlyingObject.longitude }}</label>
+              <label class="label-inside">LON {{ userLocation[1] }}</label>
             </p>
             <p>
               <label class="label-inside">ALT {{ myFlyingObject.altitude }}</label>
@@ -34,21 +34,21 @@
         </div>
         <div class="other-obj-div">
           <label class="label-heading">Nearby data</label>
-          <div class="other-info-card card" v-bind:key="obj.id" v-for="obj in allOtherFlyingObjects">
+          <div class="other-info-card card" v-bind:key="user._id" v-for="user in allUsersData">
             <p>
-              <label class="label-inside">LAT {{ obj.latitude }}</label>
+              <label class="label-inside">LAT {{ user.latitude }}</label>
             </p>
             <p>
-              <label class="label-inside">LON {{ obj.longitude }}</label>
+              <label class="label-inside">LON {{ user.longitude }}</label>
             </p>
             <p>
-              <label class="label-inside">ALT {{ obj.altitude }}</label>
+              <label class="label-inside">ALT {{ user.altitude }}</label>
             </p>
             <p>
-              <label class="label-inside">SPEED {{ obj.speed }}</label>
+              <label class="label-inside">TEMP {{ user.temperature }}</label>
             </p>
             <p>
-              <label class="label-inside">ATM {{ obj.pressure }}</label>
+              <label class="label-inside">ATM 1</label>
             </p>
           </div>
         </div>
@@ -60,10 +60,14 @@
 <script>
 import { mapGetters } from "vuex";
 
+import axios from "axios";
 import mapboxgl from "mapbox-gl/dist/mapbox-gl.js";
 
 import Header from "./Header";
+<<<<<<< HEAD
 import axios from 'axios';
+=======
+>>>>>>> refs/remotes/origin/master
 
 import redDrone from "../assets/drones/redDrone.png";
 import blackDrone from "../assets/drones/blackDrone.png";
@@ -76,16 +80,27 @@ mapboxgl.accessToken =
   "pk.eyJ1Ijoic2F1cmF2bmlyYXVsYSIsImEiOiJja2F5eHd2Y3AwOGMzMnNxYno3M2xmMXdkIn0.QeVxe4rfaHG4KsgQ7FbZqA";
 
 var map = null;
+var initSocket = null;
 
 export default {
   name: "Map",
 
   components: {
-    Header
+    Header,
   },
 
   data() {
     return {
+      baseUrl: "http://68.183.89.213",
+      wsBaseUrl: "ws://68.183.89.213/ws",
+
+      userLocation: [],
+      allUsers: {}, // Nearby users
+
+      // allUsersList: [],
+      allUsersData: {},
+
+
       mapStyle: "mapbox://styles/mapbox/streets-v11",
       // center: [this.myFlyingObject.longitude, this.myFlyingObject.latitude],  // look at mounted
       zoom: 14, // mounted
@@ -119,6 +134,110 @@ export default {
   },
 
   methods: {
+    afterGettingId(id) {
+      // is the main function of websocket
+      console.log(id);
+
+      setTimeout(() => {    // idk why bt i think it takes time to get id so
+        initSocket = new WebSocket(`${this.wsBaseUrl}/connection/${id}/`);
+
+        initSocket.onopen = () => {
+          console.log("Connection Successful!");
+
+          this.sendData(initSocket);
+        };
+
+        initSocket.onmessage = (e) => {
+          this.allUsers = JSON.parse(e.data);
+
+          // this.allUsersList = this.allUsers['user_arr']
+
+          if (this.allUsers["user_arr"].length > 1) {
+            console.log("Length longer than 1");
+
+            this.afterReceivingUsers(this.allUsers["user_arr"]);
+          }
+        };
+      },1000)
+    },
+
+    afterReceivingUsers(users) {
+      var dataSocket = new WebSocket(`${this.wsBaseUrl}/data/${this.id}/`);
+
+      dataSocket.onopen = () => {
+        console.log("data Socket opened");
+      };
+
+      dataSocket.onmessage = (e) => {
+        this.sendData(dataSocket);
+        console.log("own-data = ", e.data);
+      };
+
+      this.getOthersData(users);
+    },
+
+    getOthersData(users) {
+      users.forEach((user) => {
+        if (user !== this.id) {
+          let userDataSocket = new WebSocket(`${this.wsBaseUrl}/data/${user}/`);
+          userDataSocket.onmessage = (e) => {
+            let data = JSON.parse(e.data);
+
+            if (data.type == "messenger") {
+              this.allUsersData[user] = data
+            }
+
+            console.log("Received data = ", data);
+          };
+        }
+      });
+    },
+
+    sendData(socket) {
+      let obj = {
+        status: 200,
+        _id: this.id,
+        longitude: this.userLocation[1],
+        latitude: this.userLocation[0],
+        temperature: 20,
+        altitude: 100,
+      };
+      socket.send(JSON.stringify(obj));
+    },
+
+    getUserLocation() {
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported in your browser");
+      } else {
+        navigator.geolocation.getCurrentPosition(this.gotPosition, this.gotError);
+      }
+    },
+
+    gotPosition(pos) {
+      this.userLocation = [pos.coords.latitude, pos.coords.longitude];
+    },
+
+    gotError(error) {
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          alert("Please Allow location");
+          break;
+        case error.POSITION_UNAVAILABLE:
+          alert("Location information is unavailable.");
+          break;
+        case error.TIMEOUT:
+          alert("request timed out.");
+          break;
+        case error.UNKNOWN_ERROR:
+          alert("An unknown error occurred.");
+          break;
+        default:
+          alert("Error occured");
+      }
+    },
+
+    //////////////////////  MAP ////////////////////
+
     MapMain() {
       map.on("load", () => {
         // drones layer
@@ -178,49 +297,45 @@ export default {
       var mouseEnter = (enterOn) => {
         
         map.on("mouseenter", enterOn, function(e) {
-          
           // Change the cursor style as a UI indicator.
-        // map.getCanvas().style.cursor = "pointer";    // really ? aren't u kidding ? 
-        
-        var coordinates = []
+          // map.getCanvas().style.cursor = "pointer";    // really ? aren't u kidding ?
 
-        if (enterOn == "drones") {     // ohh not again "extra code for handling two types of coords"
-          coordinates = e.features[0].geometry.coordinates.slice();
-        }
-        else if(enterOn == "resArea") {
-          let coordsList = e.features[0].geometry.coordinates[0]
-          
-          // to put popup on center of resarea "just ignore"
+          var coordinates = [];
 
-          let getLong = (coordsList[0][0] + coordsList[2][0]) / 2
-          let getLat = (coordsList[0][1] + coordsList[2][1]) / 2
+          if (enterOn == "drones") {
+            // ohh not again "extra code for handling two types of coords"
+            coordinates = e.features[0].geometry.coordinates.slice();
+          } else if (enterOn == "resArea") {
+            let coordsList = e.features[0].geometry.coordinates[0];
 
-          coordinates = [getLong, getLat]
+            // to put popup on center of resarea "just ignore"
 
-        }
+            let getLong = (coordsList[0][0] + coordsList[2][0]) / 2;
+            let getLat = (coordsList[0][1] + coordsList[2][1]) / 2;
 
-        let description = e.features[0].properties.description;
+            coordinates = [getLong, getLat];
+          }
 
-        // Ensure that if the map is zoomed out such that multiple
-        // copies of the feature are visible, the popup appears
-        // over the copy being pointed to.
-        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-        }
+          let description = e.features[0].properties.description;
 
-        // Populate the popup and set its coordinates
-        // based on the feature found.
-        popup
-          .setLngLat(coordinates)
-          .setHTML(description)
-          .addTo(map);
-      });
-      }
+          // Ensure that if the map is zoomed out such that multiple
+          // copies of the feature are visible, the popup appears
+          // over the copy being pointed to.
+          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+          }
 
-      mouseEnter("drones")
-      mouseEnter("resArea")
+          // Populate the popup and set its coordinates
+          // based on the feature found.
+          popup
+            .setLngLat(coordinates)
+            .setHTML(description)
+            .addTo(map);
+        });
+      };
 
-
+      mouseEnter("drones");
+      mouseEnter("resArea");
     },
 
     // returns features according given allOtherFlyingObjects and myFlyingObjects
@@ -404,7 +519,21 @@ export default {
     ...mapGetters(["allOtherFlyingObjects", "myFlyingObject", "restrictedAreas"]),
   },
 
-  created() {},
+  created() {
+    window.setInterval(() => {
+      // get location every .5 sec
+      this.getUserLocation();
+    }, 500);
+
+    axios
+      .get(this.baseUrl + "/id")
+      .then((res) => {
+        this.id = res.data._id;
+        this.afterGettingId(res.data._id);
+      }) // and websocket thing starts
+      .catch((err) => console.log(err));
+    // initSocket = new WebSocket(`${this.wsBaseUrl}/connection/`)
+  },
 
   mounted() {
     map = new mapboxgl.Map({
@@ -417,7 +546,7 @@ export default {
 
     // boundary of map according to my drone center
 
-    this.bounds = [   
+    this.bounds = [
       [this.myFlyingObject.longitude - this.offset, this.myFlyingObject.latitude - this.offset], // [west, south]
       [this.myFlyingObject.longitude + this.offset, this.myFlyingObject.latitude + this.offset], // [east, north]
     ];
@@ -440,11 +569,15 @@ export default {
 
     // calls Map onmouseenter
 
+<<<<<<< HEAD
     this.onMouseEnter()
 
     
 
 
+=======
+    this.onMouseEnter();
+>>>>>>> refs/remotes/origin/master
   },
 };
 </script>
@@ -469,6 +602,7 @@ export default {
 
 .map-div {
   max-height: 90vh;
+  min-height: 90vh;
 }
 
 .my-obj-div {
@@ -546,5 +680,4 @@ export default {
     margin-bottom: 10px;
   }
 }
-
 </style>
