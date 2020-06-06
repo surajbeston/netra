@@ -1,31 +1,41 @@
 <template>
   <div>
-    <Header @display_view="display_view"/>
-      
+    <Header @display_view="display_view" />
+
     <div class="main-div">
       <div id="map" class="map-div">
         <!-- map will be injected here :) -->
       </div>
-      <div id = "mymodal"  v-bind:class="{ 'visible' : !isVisible }"><h3><div style="color: white; ">Fleet ID:</div> <input v-model="fleet_id"><br><div style="color: white; ">Object1 ID:</div> <input v-model="drone1"><br><div style="color: white; ">Extra for Fleetmate:</div><div style="color: skyblue; "> {{drone2}}</div></h3> <button class="btn btn-primary" @click="sendDataFleet()" style="margin-left:45%">OK</button> </div>
+      <div id="mymodal" v-bind:class="{ visible: !isVisible }">
+        <h3>
+          <div style="color: white; ">Fleet ID:</div>
+          <input v-model="fleet_id" /><br />
+          <div style="color: white; ">Object1 ID:</div>
+          <input v-model="drone1" /><br />
+          <div style="color: white; ">Extra for Fleetmate:</div>
+          <div style="color: skyblue; ">{{ drone2 }}</div>
+        </h3>
+        <button class="btn btn-primary" @click="sendDataFleet()" style="margin-left:45%">OK</button>
+      </div>
       <div class="info-div">
         <div class="my-obj-div">
-          <a href = "#" id = "toggle" @click = "toggle_mode"> {{mode}} </a>
+          <a href="#" id="toggle" @click="toggle_mode"> {{ mode }} </a>
           <label class="label-heading">Your data</label>
           <div class="my-info-card card">
             <!-- oops! same code repeated, why dont you use a function ? -->
             <!-- yeah i'm lazy, Sorry! "dont argue just modify"-->
             <!--  make a list and iterate -->
             <p>
-              <label class="label-inside">LAT {{ userLocation[0] }}</label>
+              <label class="label-inside">LAT {{ user.latitude }}</label>
             </p>
             <p>
-              <label class="label-inside">LON {{ userLocation[1] }}</label>
+              <label class="label-inside">LON {{ user.longitude }}</label>
             </p>
             <p>
-              <label class="label-inside">ALT {{ myFlyingObject.altitude }}</label>
+              <label class="label-inside">ALT {{ user.altitude }}</label>
             </p>
             <p>
-              <label class="label-inside">SPEED {{ myFlyingObject.speed }}</label>
+              <label class="label-inside">TEMP {{ user.temperature }}</label>
             </p>
             <p>
               <label class="label-inside">ATM {{ myFlyingObject.pressure }}</label>
@@ -94,8 +104,8 @@ export default {
       allUsers: {}, // Nearby users
 
       // allUsersList: [],
+      user: {},
       allUsersData: {},
-
 
       mapStyle: "mapbox://styles/mapbox/streets-v11",
       // center: [this.myFlyingObject.longitude, this.myFlyingObject.latitude],  // look at mounted
@@ -122,11 +132,11 @@ export default {
       ],
       droneSize: ["match", ["get", "eachSize"], "others", 0.03, "mine", 0.05, 0], // at returnFeatures
       mode: "Mono Mode",
-      isVisible: false, 
+      isVisible: false,
       fleet_id: "",
       drone1: "",
       drone2: "",
-      mono_mode: true
+      mono_mode: true,
     };
   },
 
@@ -135,7 +145,8 @@ export default {
       // is the main function of websocket
       console.log(id);
 
-      setTimeout(() => {    // idk why bt i think it takes time to get id so
+      setTimeout(() => {
+        // idk why bt i think it takes time to get id so
         initSocket = new WebSocket(`${this.wsBaseUrl}/connection/${id}/`);
 
         initSocket.onopen = () => {
@@ -150,12 +161,12 @@ export default {
           // this.allUsersList = this.allUsers['user_arr']
 
           if (this.allUsers["user_arr"].length > 1) {
-            console.log("Length longer than 1");
+            // console.log("Length longer than 1");
 
             this.afterReceivingUsers(this.allUsers["user_arr"]);
           }
         };
-      },1000)
+      }, 1000);
     },
 
     afterReceivingUsers(users) {
@@ -167,13 +178,20 @@ export default {
 
       dataSocket.onmessage = (e) => {
         this.sendData(dataSocket);
-        console.log("own-data = ", e.data);
+        let data = JSON.parse(e.data);
+        this.user = data;
+        // console.log("own-data = ", data);
       };
 
       this.getOthersData(users);
     },
 
     getOthersData(users) {
+      window.setInterval(() => {
+        // resetting data to start fresh in every 10 sec
+        this.allUsersData = {}; // dont do this and we dont need this on bots
+      }, 10000);
+
       users.forEach((user) => {
         if (user !== this.id) {
           let userDataSocket = new WebSocket(`${this.wsBaseUrl}/data/${user}/`);
@@ -181,10 +199,10 @@ export default {
             let data = JSON.parse(e.data);
 
             if (data.type == "messenger") {
-              this.allUsersData[user] = data
+              this.allUsersData[user] = data;
             }
 
-            console.log("Received data = ", data);
+            // console.log("Received data = ", data);
           };
         }
       });
@@ -194,10 +212,11 @@ export default {
       let obj = {
         status: 200,
         _id: this.id,
-        longitude: this.userLocation[1] || 80,
-        latitude: this.userLocation[0] || 20,
+        longitude: this.userLocation[1],
+        latitude: this.userLocation[0],
         temperature: 20,
         altitude: 100,
+        obstruction: 123,
       };
       socket.send(JSON.stringify(obj));
     },
@@ -243,7 +262,8 @@ export default {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: this.returnDroneFeatures(this.allOtherFlyingObjects, this.myFlyingObject),
+            features: [],
+            // this.returnDroneFeatures(this.allUsersData, this.user),
           },
         });
 
@@ -257,6 +277,20 @@ export default {
             "icon-allow-overlap": true,
           },
         });
+
+        window.setInterval(() => {
+
+          // Why didn't i use flyto to make our drone always be on center of boundary ?
+
+          this.setBoundary(this.userLocation);
+
+          let features = this.returnDroneFeatures(this.allUsersData, this.user);
+
+          map.getSource("drones").setData({
+            type: "FeatureCollection",
+            features,
+          });
+        }, 1000); // if a sec delay bad ?
 
         // restricted ares layer
 
@@ -283,16 +317,12 @@ export default {
     // when mouse enter event is called
 
     onMouseEnter() {
-
       var popup = new mapboxgl.Popup({
         closeButton: false,
         closeOnClick: true,
       });
 
-
-
       var mouseEnter = (enterOn) => {
-        
         map.on("mouseenter", enterOn, function(e) {
           // Change the cursor style as a UI indicator.
           // map.getCanvas().style.cursor = "pointer";    // really ? aren't u kidding ?
@@ -339,23 +369,21 @@ export default {
 
     returnDroneFeatures(objs, myobj) {
       var features = [];
-
       // other objects feature
-
-      objs.forEach((obj) => {
+      for (var obj in objs) {
         features.push({
           type: "Feature",
           properties: {
-            eachColor: this.returnColor(obj.altitude),
+            eachColor: this.returnColor(objs[obj].altitude),
             eachSize: "others",
-            description: this.returnDroneDescription(obj),
+            description: this.returnDroneDescription(objs[obj]),
           },
           geometry: {
             type: "Point",
-            coordinates: [obj.longitude, obj.latitude],
+            coordinates: [objs[obj].longitude, objs[obj].latitude],
           },
         });
-      });
+      }
 
       // my obj feature
 
@@ -394,6 +422,18 @@ export default {
       return features;
     },
 
+    setBoundary(userLocation) {
+      // boundary of map according to my drone center
+
+      this.bounds = [
+        [userLocation[1] - this.offset, userLocation[0] - this.offset], // [west, south]
+        [userLocation[1] + this.offset, userLocation[0] + this.offset], // [east, north]
+      ];
+
+      // this should be called every time socket sends data
+      map.setMaxBounds(this.bounds); // just setting the boundaries (:
+    },
+
     // returns color according to altitude
 
     returnColor(altitude) {
@@ -407,9 +447,7 @@ export default {
     // popUp message on hover
 
     returnDroneDescription(obj) {
-      return `<strong>
-                ${obj.name}
-              </strong>
+      return `
               <p>
                 <strong>LAT</strong> ${obj.latitude}
               </p>
@@ -444,80 +482,78 @@ export default {
       });
     },
 
-    display_view(value){
-      console.log(value)
-
+    display_view(value) {
+      console.log(value);
     },
-    alert_data(data){
-      console.log(data)
-      this.isVisible = !this.isVisible
-      this.fleet_id = data["fleet_id"]
-      this.drone1 = data["ids"][0]
-      this.drone2 =  data["ids"][1]
-
-      
-
+    alert_data(data) {
+      console.log(data);
+      this.isVisible = !this.isVisible;
+      this.fleet_id = data["fleet_id"];
+      this.drone1 = data["ids"][0];
+      this.drone2 = data["ids"][1];
     },
-    toggle_mode(){
-      if (this.mode != "Fleet Mode"){
-        this.mode = "Fleet Mode"
-         axios
-          .get('http://localhost:8000/fleet/3')
-          .then(response => (this.alert_data(response.data)))
-      }
-      else{
-        this.mode = "Mono Mode"
+    toggle_mode() {
+      if (this.mode != "Fleet Mode") {
+        this.mode = "Fleet Mode";
+        axios.get("http://localhost:8000/fleet/3").then((response) => this.alert_data(response.data));
+      } else {
+        this.mode = "Mono Mode";
       }
     },
-    sendDataFleet(){
-      this.isVisible = !this.isVisible
-      var fleetSock = new WebSocket( 
-                        'ws://'   
-                        + "localhost:8000"
-                        + '/ws/fleet/'
-                        + this.fleet_id
-                        + '/'
-                        + this.drone1
-                        + '/'
-                    )
+    sendDataFleet() {
+      this.isVisible = !this.isVisible;
+      var fleetSock = new WebSocket(
+        "ws://" + "localhost:8000" + "/ws/fleet/" + this.fleet_id + "/" + this.drone1 + "/"
+      );
 
       fleetSock.onopen = () => {
-        fleetSock.send(JSON.stringify({"status": 200,
-        'fleet_id': this.fleet_id,
-        '_id': this.drone1,
-        'longitude': 23.23423,
-        'latitude': 34.23423412,
-        'temperature': 12,
-        'altitude': 234,
-        'obstruction': 123}))
-      }
+        fleetSock.send(
+          JSON.stringify({
+            status: 200,
+            fleet_id: this.fleet_id,
+            _id: this.drone1,
+            longitude: 23.23423,
+            latitude: 34.23423412,
+            temperature: 12,
+            altitude: 234,
+            obstruction: 123,
+          })
+        );
+      };
 
-      fleetSock.onmessage = (e) =>{
+      fleetSock.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        console.log(data);
+        if (data._id == this.drone1) {
+          this.userLocation = [data.latitude, data.longitude];
+          this.myFlyingObject.altitude = data.altitude;
+          this.myFlyingObject.temperature = data.temperature;
+          this.myFlyingObject.presuure = 1;
 
-      const data = JSON.parse(e.data);
-      console.log(data);
-      if (data._id == this.drone1){
-        this.userLocation = [data.latitude, data.longitude]
-        this.myFlyingObject.altitude = data.altitude
-        this.myFlyingObject.temperature = data.temperature
-        this.myFlyingObject.presuure = 1
-
-        fleetSock.send(JSON.stringify({"status": 200,
-        'fleet_id': this.fleet_id,
-        '_id': this.drone1,
-        'longitude': 23.23423,
-        'latitude': 34.23423412,
-        'temperature': 12,
-        'altitude': 234,
-        'obstruction': 123}))
-    }
-    else{
-      this.allUsersData = [{"latitude": data.latitude, "longitude":data.longitude, "altitude": data.altitude, "temperature": data.temperature}]
-    }
-
-
-      }
-    }
+          fleetSock.send(
+            JSON.stringify({
+              status: 200,
+              fleet_id: this.fleet_id,
+              _id: this.drone1,
+              longitude: 23.23423,
+              latitude: 34.23423412,
+              temperature: 12,
+              altitude: 234,
+              obstruction: 123,
+            })
+          );
+        } else {
+          this.allUsersData = [
+            {
+              latitude: data.latitude,
+              longitude: data.longitude,
+              altitude: data.altitude,
+              temperature: data.temperature,
+            },
+          ];
+        }
+      };
+    },
   },
 
   computed: {
@@ -546,18 +582,8 @@ export default {
       style: this.mapStyle,
       zoom: this.zoom,
       maxZoom: this.maxZoom,
-      center: [this.myFlyingObject.longitude, this.myFlyingObject.latitude],
+      center: [this.userLocation[1], this.userLocation[0]],
     });
-
-    // boundary of map according to my drone center
-
-    this.bounds = [
-      [this.myFlyingObject.longitude - this.offset, this.myFlyingObject.latitude - this.offset], // [west, south]
-      [this.myFlyingObject.longitude + this.offset, this.myFlyingObject.latitude + this.offset], // [east, north]
-    ];
-
-    // this should be called every time socket sends data
-    map.setMaxBounds(this.bounds); // just setting the boundaries (:
 
     // calls loadImage method and load Image giving a name "used in features"
 
@@ -574,10 +600,7 @@ export default {
 
     // calls Map onmouseenter
 
-    this.onMouseEnter()
-
     this.onMouseEnter();
-
   },
 };
 </script>
@@ -642,7 +665,7 @@ export default {
   margin-bottom: 5px;
 }
 
-#toggle{
+#toggle {
   padding: 5px 5px 5px 5px;
   border: black solid 1px;
   border-radius: 5px;
@@ -650,13 +673,13 @@ export default {
   display: block;
 }
 
-#toggle:hover{
+#toggle:hover {
   color: white;
   background-color: brown;
   font-weight: bolder;
 }
 
-#mymodal{
+#mymodal {
   height: 250px;
   width: 500px;
   position: absolute;
@@ -666,8 +689,8 @@ export default {
   background-color: brown;
   margin-left: 25%;
 }
-.visible{
-  display:none;
+.visible {
+  display: none;
 }
 
 @media screen and (max-width: 1000px) {
