@@ -64,10 +64,6 @@ import axios from "axios";
 import mapboxgl from "mapbox-gl/dist/mapbox-gl.js";
 
 import Header from "./Header";
-<<<<<<< HEAD
-import axios from 'axios';
-=======
->>>>>>> refs/remotes/origin/master
 
 import redDrone from "../assets/drones/redDrone.png";
 import blackDrone from "../assets/drones/blackDrone.png";
@@ -197,8 +193,8 @@ export default {
       let obj = {
         status: 200,
         _id: this.id,
-        longitude: this.userLocation[1],
-        latitude: this.userLocation[0],
+        longitude: this.userLocation[1] || 80,
+        latitude: this.userLocation[0] || 20,
         temperature: 20,
         altitude: 100,
       };
@@ -220,19 +216,19 @@ export default {
     gotError(error) {
       switch (error.code) {
         case error.PERMISSION_DENIED:
-          alert("Please Allow location");
+          console.log("Please Allow location");
           break;
         case error.POSITION_UNAVAILABLE:
-          alert("Location information is unavailable.");
+          console.log("Location information is unavailable.");
           break;
         case error.TIMEOUT:
-          alert("request timed out.");
+          console.log("request timed out.");
           break;
         case error.UNKNOWN_ERROR:
-          alert("An unknown error occurred.");
+          console.log("An unknown error occurred.");
           break;
         default:
-          alert("Error occured");
+          console.log("Error occured");
       }
     },
 
@@ -569,15 +565,7 @@ export default {
 
     // calls Map onmouseenter
 
-<<<<<<< HEAD
-    this.onMouseEnter()
-
-    
-
-
-=======
     this.onMouseEnter();
->>>>>>> refs/remotes/origin/master
   },
 };
 </script>
