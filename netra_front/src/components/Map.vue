@@ -90,7 +90,7 @@ export default {
       baseUrl: "http://68.183.89.213",
       wsBaseUrl: "ws://68.183.89.213/ws",
 
-      userLocation: [],
+      userLocation: [23.2342231, 23.12341234],
       allUsers: {}, // Nearby users
 
       // allUsersList: [],
@@ -125,7 +125,8 @@ export default {
       isVisible: false, 
       fleet_id: "",
       drone1: "",
-      drone2: ""
+      drone2: "",
+      mono_mode: true
     };
   },
 
@@ -496,6 +497,11 @@ export default {
       const data = JSON.parse(e.data);
       console.log(data);
       if (data._id == this.drone1){
+        this.userLocation = [data.latitude, data.longitude]
+        this.myFlyingObject.altitude = data.altitude
+        this.myFlyingObject.temperature = data.temperature
+        this.myFlyingObject.presuure = 1
+
         fleetSock.send(JSON.stringify({"status": 200,
         'fleet_id': this.fleet_id,
         '_id': this.drone1,
@@ -504,6 +510,9 @@ export default {
         'temperature': 12,
         'altitude': 234,
         'obstruction': 123}))
+    }
+    else{
+      this.allUsersData = [{"latitude": data.latitude, "longitude":data.longitude, "altitude": data.altitude, "temperature": data.temperature}]
     }
 
 
@@ -565,7 +574,10 @@ export default {
 
     // calls Map onmouseenter
 
+    this.onMouseEnter()
+
     this.onMouseEnter();
+
   },
 };
 </script>
