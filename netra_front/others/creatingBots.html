@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1 id="main"></h1>
+  </body>
+
+  <script>
+    var id = null;
+    var url = "http://68.183.89.213/id";
+    var socketUrl = "ws://68.183.89.213/ws/";
+
+    var initSocket = null;
+
+    var i = 0; // each degree
+
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        id = data._id;
+
+        document.getElementById("main").innerHTML = id;
+
+        initSocket = new WebSocket(socketUrl + "connection/" + id + "/");
+
+        initSocket.onopen = () => {
+          console.log("Opened Init Socket");
+          sendData(initSocket);
+        };
+
+        initSocket.onclose = () => {
+          console.log("Connection Closed");
+        };
+
+        initSocket.onmessage = (e) => {
+          allUsers = JSON.parse(e.data);
+          console.log(allUsers);
+          if (allUsers["user_arr"].length > 1) {
+            afterReceivingUsers(allUsers);
+          }
+        };
+      });
+
+    function afterReceivingUsers(allUsers) {
+      console.log(allUsers["user_arr"]);
+      var dataSocket = new WebSocket(socketUrl + "data/" + id + "/");
+
+      dataSocket.onopen = () => {
+        console.log("data Socket opened");
+      };
+
+      dataSocket.onmessage = (e) => {
+        sendData(dataSocket);
+        console.log("own-data = ", e.data);
+      };
+
+      getOthersData(allUsers["user_arr"]);
+    }
+
+    function getOthersData(users) {
+      var userDataSocket = null;
+      users.forEach((user) => {
+        if (user !== id) {
+          userDataSocket = new WebSocket(socketUrl + "data/" + user + "/");
+          userDataSocket.onmessage = (e) => {
+            let data = JSON.parse(e.data);
+            console.log("Received data", data);
+          };
+        }
+      });
+    }
+
+    function sendData(socket) {
+      coords = getCoords([0, 0], 10);
+      socket.send(
+        JSON.stringify({
+          status: 200,
+          _id: id,
+          longitude: coords[1],
+          latitude: coords[0],
+          temperature: 20,
+          altitude: 20,
+        })
+      );
+    }
+
+    function getCoords(center, radius) {
+      if (i > 3.14 * 2) {
+        i = 0;
+      }
+
+      i += 0.001;
+
+      let long = Math.cos(i) * radius + center[1];
+      let lat = Math.sin(i) * radius + center[0];
+
+      return [lat, long];
+    }
+  </script>
+</html>
