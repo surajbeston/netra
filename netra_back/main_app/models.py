@@ -12,7 +12,7 @@ class Fleet(models.Model):
     fleet_id = models.CharField(max_length = 20)
     ids = models.CharField(max_length = 300)
 
-class Obstructions(models.Model):
+class Obstruction(models.Model):
     by = models.ForeignKey(GPS, on_delete= models.CASCADE)
     latitude = models.DecimalField(max_digits=25, decimal_places=20, blank = True, null = True)
     longitude = models.DecimalField(max_digits=25, decimal_places=20, blank = True, null =True)

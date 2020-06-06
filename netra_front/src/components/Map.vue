@@ -1,12 +1,15 @@
 <template>
   <div>
-    <Header />
+    <Header @display_view="display_view"/>
+      
     <div class="main-div">
       <div id="map" class="map-div">
         <!-- map will be injected here :) -->
       </div>
+      <div id = "mymodal"  v-bind:class="{ 'visible' : !isVisible }"><h3><div style="color: white; ">Fleet ID:</div> <input v-model="fleet_id"><br><div style="color: white; ">Object1 ID:</div> <input v-model="drone1"><br><div style="color: white; ">Extra for Fleetmate:</div><div style="color: skyblue; "> {{drone2}}</div></h3> <button class="btn btn-primary" @click="sendDataFleet()" style="margin-left:45%">OK</button> </div>
       <div class="info-div">
         <div class="my-obj-div">
+          <a href = "#" id = "toggle" @click = "toggle_mode"> {{mode}} </a>
           <label class="label-heading">Your data</label>
           <div class="my-info-card card">
               <!-- oops! same code repeated, why dont you use a function ? -->
@@ -59,7 +62,8 @@ import { mapGetters } from "vuex";
 
 import mapboxgl from "mapbox-gl/dist/mapbox-gl.js";
 
-import Header from "./Header"
+import Header from "./Header";
+import axios from 'axios';
 
 import redDrone from "../assets/drones/redDrone.png";
 import blackDrone from "../assets/drones/blackDrone.png";
@@ -106,6 +110,11 @@ export default {
         "#ccc", // but why ? > for declaring the type
       ],
       droneSize: ["match", ["get", "eachSize"], "others", 0.03, "mine", 0.05, 0], // at returnFeatures
+      mode: "Mono Mode",
+      isVisible: false, 
+      fleet_id: "",
+      drone1: "",
+      drone2: ""
     };
   },
 
@@ -322,6 +331,73 @@ export default {
         map.addImage(giveThisName, image);
       });
     },
+
+    display_view(value){
+      console.log(value)
+
+    },
+    alert_data(data){
+      console.log(data)
+      this.isVisible = !this.isVisible
+      this.fleet_id = data["fleet_id"]
+      this.drone1 = data["ids"][0]
+      this.drone2 =  data["ids"][1]
+
+      
+
+    },
+    toggle_mode(){
+      if (this.mode != "Fleet Mode"){
+        this.mode = "Fleet Mode"
+         axios
+          .get('http://localhost:8000/fleet/3')
+          .then(response => (this.alert_data(response.data)))
+      }
+      else{
+        this.mode = "Mono Mode"
+      }
+    },
+    sendDataFleet(){
+      this.isVisible = !this.isVisible
+      var fleetSock = new WebSocket( 
+                        'ws://'   
+                        + "localhost:8000"
+                        + '/ws/fleet/'
+                        + this.fleet_id
+                        + '/'
+                        + this.drone1
+                        + '/'
+                    )
+
+      fleetSock.onopen = () => {
+        fleetSock.send(JSON.stringify({"status": 200,
+        'fleet_id': this.fleet_id,
+        '_id': this.drone1,
+        'longitude': 23.23423,
+        'latitude': 34.23423412,
+        'temperature': 12,
+        'altitude': 234,
+        'obstruction': 123}))
+      }
+
+      fleetSock.onmessage = (e) =>{
+
+      const data = JSON.parse(e.data);
+      console.log(data);
+      if (data._id == this.drone1){
+        fleetSock.send(JSON.stringify({"status": 200,
+        'fleet_id': this.fleet_id,
+        '_id': this.drone1,
+        'longitude': 23.23423,
+        'latitude': 34.23423412,
+        'temperature': 12,
+        'altitude': 234,
+        'obstruction': 123}))
+    }
+
+
+      }
+    }
   },
 
   computed: {
@@ -365,6 +441,9 @@ export default {
     // calls Map onmouseenter
 
     this.onMouseEnter()
+
+    
+
 
   },
 };
@@ -427,6 +506,34 @@ export default {
   background-color: rgb(228, 228, 228);
   margin: 2px;
   margin-bottom: 5px;
+}
+
+#toggle{
+  padding: 5px 5px 5px 5px;
+  border: black solid 1px;
+  border-radius: 5px;
+  text-decoration: none;
+  display: block;
+}
+
+#toggle:hover{
+  color: white;
+  background-color: brown;
+  font-weight: bolder;
+}
+
+#mymodal{
+  height: 250px;
+  width: 500px;
+  position: absolute;
+  float: right;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  background-color: brown;
+  margin-left: 25%;
+}
+.visible{
+  display:none;
 }
 
 @media screen and (max-width: 1000px) {

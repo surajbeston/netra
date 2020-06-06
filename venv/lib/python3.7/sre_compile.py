@@ -1,1 +1,1 @@
-E:/usr/lib/python3.7/sre_compile.py
+/usr/lib/python3.7/sre_compile.py

@@ -3,18 +3,13 @@
     <img src="../assets/logo.png" alt="logo">
     <ul class='links'>
       <li>
-        <a href="#">
-          Home
+        <a href="#" @click = "send_data('navigation')" class = "menu"> 
+          Navigation
         </a>
       </li>
       <li>
-        <a href="#">
-          Map
-        </a>
-      </li>  
-      <li>
-        <a href="#">
-          About
+        <a href="#" @click = "send_data('obstruction')" class = "menu">
+          Obstructions
         </a>
       </li>  
     </ul>
@@ -25,6 +20,11 @@
 
 export default {
   name:'Header',
+  methods: {
+    send_data(display_view){
+      this.$emit("display_view", display_view)
+    }
+  }
 
 }
 
@@ -63,8 +63,18 @@ export default {
   text-decoration: none;
 }
 
-.links a:hover {
-  color: rgb(119, 119, 119);
+
+
+.menu{
+  padding: 5px 5px 5px 5px;
+  border: black solid 1px;
+  border-radius: 5px;
+}
+
+.menu:hover{
+  color: white;
+  background-color: brown;
+  font-weight: bolder;
 }
 
 
