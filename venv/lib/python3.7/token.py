@@ -1,1 +1,1 @@
-E:/usr/lib/python3.7/token.py
+/usr/lib/python3.7/token.py
