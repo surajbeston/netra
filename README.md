@@ -14,9 +14,7 @@
 
 <p>In this mode drone is alone and receives information from surrounding drones and transmits its information to them. </p>
 
-<h3>Fleet M<p>Main feature basically is a relay mechanism that relays important variables like location-cordinates, temperature, pressure, altitude, speed, etc from a drone to nearest drones(vicinity can be choosen, for now 3 kilometers). This creates an information sponge for the drone which can help drone absorb surrounding information and act accordingly. For now we have two basic features or modes of operations for the platform:</p>
-
-ode</h3>
+<h3>Fleet Mode</h3>
 
 <p>In this mode drone is accompanied by fleetmates so that they can share their info no matter where they are, to remain in contact and to aware of their fleetmates.</p>
 
@@ -51,7 +49,7 @@ ode</h3>
 <ul>
     <li><b>Saurav Niraula<b> Worked in frontend. Integrated MapBox and worked with Vue Js.</li>
     <li><b>Sudesh Mate<b> Helped in research and worked on drone navigation.</li>
-    <li><b>Suraj Bhattarai<b> Worked on idea, design and documented the entire thing. </li>
+    <li><b>Suraj Bhattarai<b> Worked on idea and documented the entire thing. </li>
     <li><b>Suraj Jha<b> Created backend and helped to integrate it with Vue.</li>
 </ul>
 
