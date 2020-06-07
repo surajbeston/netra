@@ -16,7 +16,8 @@
 
 <h3>Fleet Mode</h3>
 
-<p>In this mode drone is accompanied by fleetmates so that they can share their info no matter where they are, to remain in contact and to aware of their fleetmates.</p>
+<p>In this mode drone is accompanied by fleetmates so that they can share their info no matter where they are, to remain in contact and to aware of their fleetmates. <b>Activation of fleet mode:</b> Upon the press of switch button on the top-right corner of the page, adialog box is received. It contains Fleet-ID which can be used to transmit data between fleetmates, no mater where they are.</p>
+
 
 
 <h2>Technicals:</h2>
@@ -52,6 +53,10 @@
     <li><b>Suraj Bhattarai</b> Worked on idea and documented the entire thing. </li>
     <li><b>Suraj Jha</b> Created backend and helped to integrate it with Vue.</li>
 </ul>
+
+<h2>Implementation </h2>
+
+<p>We can't do this thing all alone. We will need government bodies like FAA to prepare necessary protocols and issue national permission upon which we can stretch our services</p>
 
 
 <h3> References: </h3>
