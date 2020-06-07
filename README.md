@@ -47,10 +47,10 @@
 
 <h2>In Team:</h2>
 <ul>
-    <li><b>Saurav Niraula<b> Worked in frontend. Integrated MapBox and worked with Vue Js.</li>
-    <li><b>Sudesh Mate<b> Helped in research and worked on drone navigation.</li>
-    <li><b>Suraj Bhattarai<b> Worked on idea and documented the entire thing. </li>
-    <li><b>Suraj Jha<b> Created backend and helped to integrate it with Vue.</li>
+    <li><b>Saurav Niraula</b> Worked in frontend. Integrated MapBox and worked with Vue Js.</li>
+    <li><b>Sudesh Mate</b> Helped in research and worked on drone navigation.</li>
+    <li><b>Suraj Bhattarai</b> Worked on idea and documented the entire thing. </li>
+    <li><b>Suraj Jha</b> Created backend and helped to integrate it with Vue.</li>
 </ul>
 
 
