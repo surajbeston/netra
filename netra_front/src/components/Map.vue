@@ -311,7 +311,7 @@ export default {
         this.windowInterval = window.setInterval(() => {
           // Why didn't i use flyto to make our drone always be on center of boundary ?
           //because youre a box of shit ;>
-          console.log("up");
+          // console.log("up");
           this.setBoundary(this.userLocation);
           this.updateLine();
           this.updateMapData();
@@ -622,7 +622,7 @@ export default {
         
         window.clearInterval(this.windowInterval);
         map.setMaxBounds(null)
-        map.zoom = 2
+        map.setZoom(0)
         map.setMaxZoom(null)
         map.setMinZoom(null);
 
@@ -660,7 +660,7 @@ export default {
 
           // jst to center drone we will remove this
 
-          map.flyTo({center: [data.longitude, data.latitude]})
+          // map.flyTo({center: [data.longitude, data.latitude]})
           // this.setBoundary(null)
 
           fleetSock.send(
