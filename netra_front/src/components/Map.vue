@@ -260,6 +260,29 @@ export default {
 
     MapMain() {
       map.on("load", () => {
+        // lines layer
+
+        map.addSource("lines", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: [],
+          },
+        });
+
+        map.addLayer({
+          id: "lines",
+          type: "line",
+          source: "lines",
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": "#9400D3",
+            "line-width": 3,
+          },
+        });
         // drones layer
 
         map.addSource("drones", {
@@ -286,7 +309,7 @@ export default {
           // Why didn't i use flyto to make our drone always be on center of boundary ?
 
           this.setBoundary(this.userLocation);
-
+          this.updateLine();
           this.updateMapData();
         }, 1000); // smaller than this doesnot make sense
 
@@ -321,26 +344,35 @@ export default {
       });
     },
 
+    updateLine() {
+      let features = this.returnLineFeatures(this.allUsersData);
+      map.getSource("lines").setData({
+        type: "FeatureCollection",
+        features,
+      });
+    },
+
     onKeyDown() {
       window.addEventListener("keydown", (e) => {
         // if (!this.isLocationAllowed) {
-          switch (e.keyCode) {
-            case 38: // up
-              this.userLocation[0] += this.howMuchToMove;
-              break;
+        switch (e.keyCode) {
+          case 38: // up
+            this.userLocation[0] += this.howMuchToMove;
+            break;
 
-            case 40: // down
-              this.userLocation[0] -= this.howMuchToMove;
-              break;
+          case 40: // down
+            this.userLocation[0] -= this.howMuchToMove;
+            break;
 
-            case 37: //left
-              this.userLocation[1] -= this.howMuchToMove;
-              break;
+          case 37: //left
+            this.userLocation[1] -= this.howMuchToMove;
+            break;
 
-            case 39: //right
-              this.userLocation[1] += this.howMuchToMove;
-          }
-          // this.updateMapData();
+          case 39: //right
+            this.userLocation[1] += this.howMuchToMove;
+        }
+        this.updateMapData();
+        this.updateLine();
         // }
       });
     },
@@ -427,9 +459,28 @@ export default {
         },
         geometry: {
           type: "Point",
-          coordinates: [myobj.longitude, myobj.latitude],
+          coordinates: [this.userLocation[1], this.userLocation[0]],
         },
       });
+
+      return features;
+    },
+
+    returnLineFeatures(otherUsers) {
+      let features = [];
+
+      for (var each in otherUsers) {
+        features.push({
+          type: "Feature",
+          geometry: {
+            type: "LineString",
+            coordinates: [
+              [this.userLocation[1], this.userLocation[0]],
+              [otherUsers[each].longitude, otherUsers[each].latitude],
+            ],
+          },
+        });
+      }
 
       return features;
     },
