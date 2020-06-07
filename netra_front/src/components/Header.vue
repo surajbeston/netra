@@ -9,7 +9,7 @@
       </li>
       <li>
         <a href="#" @click = "send_data('obstruction')" class = "menu">
-          Obstructions
+          Refresh
         </a>
       </li>  
     </ul>

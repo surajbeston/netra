@@ -1,7 +1,7 @@
 <template>
   <div>
-    <Header @display_view="display_view" />
-
+    <Header @display_view="getData" /> 
+    <div class = "greener">ID: {{did}}</div><div v-bind:class="{redder: isRestricted, greener: !isRestricted}"><u>{{restricted}}</u></div><br>
     <div class="main-div">
       <div id="map" class="map-div">
         <!-- map will be injected here :) -->
@@ -139,6 +139,9 @@ export default {
       drone1: "",
       drone2: "",
       mono_mode: true,
+      restricted: "Safe Zone",
+      isRestricted: false,
+      did: ""
     };
   },
 
@@ -146,6 +149,7 @@ export default {
     afterGettingId(id) {
       // is the main function of websocket
       console.log(id);
+      this.did = id;
 
       setTimeout(() => {
         // idk why bt i think it takes time to get id so
@@ -196,8 +200,7 @@ export default {
 
       users.forEach((user) => {
         if (user !== this.id) {
-          let userDataSocket = new WebSocket(`${this.wsBaseUrl}/data/${user}/`);
-          userDataSocket.onmessage = (e) => {
+           new WebSocket(`${this.wsBaseUrl}/data/${user}/`).onmessage = (e) => {
             let data = JSON.parse(e.data);
 
             if (data.type == "messenger") {
@@ -307,6 +310,7 @@ export default {
 
         window.setInterval(() => {
           // Why didn't i use flyto to make our drone always be on center of boundary ?
+          //because youre a box of shit ;>
 
           this.setBoundary(this.userLocation);
           this.updateLine();
@@ -333,6 +337,20 @@ export default {
           },
         });
       });
+    },
+
+
+    restricted_checker(){
+      console.log("reached here")
+      if (this.userLocation[1] > 85.31388882613281 && this.userLocation[1] < 85.31667699189056 && this.userLocation[0] > 27.704905195253197 &&  this.userLocation[0] < 27.707164680527804){
+        console.log("also here")
+        this.restricted = "Restricted Zone"
+        this.isRestricted = !this.isRestricted
+      }
+      else{
+        this.restricted = "Safe Zone"
+        this.isRestricted = !this.isRestricted
+      }
     },
 
     updateMapData() {
@@ -373,6 +391,8 @@ export default {
         }
         this.updateMapData();
         this.updateLine();
+
+        this.restricted_checker();
         // }
       });
     },
@@ -577,15 +597,25 @@ export default {
     toggle_mode() {
       if (this.mode != "Fleet Mode") {
         this.mode = "Fleet Mode";
-        axios.get("http://localhost:8000/fleet/3").then((response) => this.alert_data(response.data));
+        axios.get("http://68.183.89.213/fleet/3").then((response) => this.alert_data(response.data));
       } else {
         this.mode = "Mono Mode";
       }
     },
+
+    getData(){
+      axios
+      .get(this.baseUrl + "/id")
+      .then((res) => {
+        this.id = res.data._id;
+        this.afterGettingId(res.data._id);
+      }) // and websocket thing starts
+      .catch((err) => console.log(err));
+    },
     sendDataFleet() {
       this.isVisible = !this.isVisible;
       var fleetSock = new WebSocket(
-        "ws://" + "localhost:8000" + "/ws/fleet/" + this.fleet_id + "/" + this.drone1 + "/"
+        "ws://" + "68.183.89.213" + "/ws/fleet/" + this.fleet_id + "/" + this.drone1 + "/"
       );
 
       fleetSock.onopen = () => {
@@ -648,13 +678,7 @@ export default {
     //   this.getUserLocation();
     // }, 500);
 
-    axios
-      .get(this.baseUrl + "/id")
-      .then((res) => {
-        this.id = res.data._id;
-        this.afterGettingId(res.data._id);
-      }) // and websocket thing starts
-      .catch((err) => console.log(err));
+    this.getData()
     // initSocket = new WebSocket(`${this.wsBaseUrl}/connection/`)
   },
 
@@ -667,6 +691,8 @@ export default {
       center: [this.userLocation[1], this.userLocation[0]],
       keyboard: false,
     });
+
+    console.log(this.restrictedAreas)
 
     this.onKeyDown();
 
@@ -776,6 +802,15 @@ export default {
 }
 .visible {
   display: none;
+}
+
+.redder{
+ color: red;
+ font-size: 30px;
+}
+.greener{
+  color: green;
+  font-size: 30px;
 }
 
 @media screen and (max-width: 1000px) {
