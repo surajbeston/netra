@@ -308,10 +308,10 @@ export default {
           },
         });
 
-        window.setInterval(() => {
+        this.windowInterval = window.setInterval(() => {
           // Why didn't i use flyto to make our drone always be on center of boundary ?
           //because youre a box of shit ;>
-
+          console.log("up");
           this.setBoundary(this.userLocation);
           this.updateLine();
           this.updateMapData();
@@ -619,6 +619,15 @@ export default {
       );
 
       fleetSock.onopen = () => {
+        
+        window.clearInterval(this.windowInterval);
+        map.setMaxBounds(null)
+        map.zoom = 2
+        map.setMaxZoom(null)
+        map.setMinZoom(null);
+
+        
+
         fleetSock.send(
           JSON.stringify({
             status: 200,
@@ -634,13 +643,25 @@ export default {
       };
 
       fleetSock.onmessage = (e) => {
+        // map.setMaxBounds = undefined;
+        
         const data = JSON.parse(e.data);
         console.log(data);
         if (data._id == this.drone1) {
           this.userLocation = [data.latitude, data.longitude];
-          this.myFlyingObject.altitude = data.altitude;
-          this.myFlyingObject.temperature = data.temperature;
-          this.myFlyingObject.presuure = 1;
+          this.user.latitude = data.latitude;
+          this.user.longitude = data.longitude;
+          this.user.altitude = data.altitude;
+          this.user.temperature = data.temperature;
+          this.user.presuure = 1;
+
+          this.updateLine()
+          this.updateMapData()
+
+          // jst to center drone we will remove this
+
+          map.flyTo({center: [data.longitude, data.latitude]})
+          // this.setBoundary(null)
 
           fleetSock.send(
             JSON.stringify({
@@ -686,7 +707,7 @@ export default {
     map = new mapboxgl.Map({
       container: "map",
       style: this.mapStyle,
-      zoom: this.zoom,
+      // zoom: this.zoom,
       maxZoom: this.maxZoom,
       center: [this.userLocation[1], this.userLocation[0]],
       keyboard: false,
