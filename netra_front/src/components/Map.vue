@@ -100,7 +100,7 @@ export default {
       baseUrl: "http://68.183.89.213",
       wsBaseUrl: "ws://68.183.89.213/ws",
 
-      userLocation: [23.2342231, 23.12341234],
+      userLocation: [27.70523193557546, 85.31165898693936],
       allUsers: {}, // Nearby users
 
       // allUsersList: [],
@@ -112,6 +112,8 @@ export default {
       zoom: 14, // mounted
       maxZoom: 19, // mounted
       offset: 0.01, // mounted  1 long ~= 110km
+      howMuchToMove: 0.0001,
+      isLocationAllowed: true,
       droneColors: [
         // at returnFeatures
         "match",
@@ -221,36 +223,38 @@ export default {
       socket.send(JSON.stringify(obj));
     },
 
-    getUserLocation() {
-      if (!navigator.geolocation) {
-        alert("Geolocation is not supported in your browser");
-      } else {
-        navigator.geolocation.getCurrentPosition(this.gotPosition, this.gotError);
-      }
-    },
+    // getUserLocation() {
+    //   if (!navigator.geolocation) {
+    //     alert("Geolocation is not supported in your browser");
+    //   } else {
+    //     navigator.geolocation.getCurrentPosition(this.gotPosition, this.gotError);
+    //   }
+    // },
 
-    gotPosition(pos) {
-      this.userLocation = [pos.coords.latitude, pos.coords.longitude];
-    },
+    // gotPosition(pos) {
+    //   this.isLocationAllowed = true;
+    //   this.userLocation = [pos.coords.latitude, pos.coords.longitude];
+    // },
 
-    gotError(error) {
-      switch (error.code) {
-        case error.PERMISSION_DENIED:
-          console.log("Please Allow location");
-          break;
-        case error.POSITION_UNAVAILABLE:
-          console.log("Location information is unavailable.");
-          break;
-        case error.TIMEOUT:
-          console.log("request timed out.");
-          break;
-        case error.UNKNOWN_ERROR:
-          console.log("An unknown error occurred.");
-          break;
-        default:
-          console.log("Error occured");
-      }
-    },
+    // gotError(error) {
+    //   switch (error.code) {
+    //     case error.PERMISSION_DENIED:
+    //       this.isLocationAllowed = false;
+    //       // console.log("Please Allow location");
+    //       break;
+    //     case error.POSITION_UNAVAILABLE:
+    //       console.log("Location information is unavailable.");
+    //       break;
+    //     case error.TIMEOUT:
+    //       console.log("request timed out.");
+    //       break;
+    //     case error.UNKNOWN_ERROR:
+    //       console.log("An unknown error occurred.");
+    //       break;
+    //     default:
+    //       console.log("Error occured");
+    //   }
+    // },
 
     //////////////////////  MAP ////////////////////
 
@@ -279,18 +283,12 @@ export default {
         });
 
         window.setInterval(() => {
-
           // Why didn't i use flyto to make our drone always be on center of boundary ?
 
           this.setBoundary(this.userLocation);
 
-          let features = this.returnDroneFeatures(this.allUsersData, this.user);
-
-          map.getSource("drones").setData({
-            type: "FeatureCollection",
-            features,
-          });
-        }, 1000); // if a sec delay bad ?
+          this.updateMapData();
+        }, 1000); // smaller than this doesnot make sense
 
         // restricted ares layer
 
@@ -311,6 +309,39 @@ export default {
             "fill-opacity": 0.8,
           },
         });
+      });
+    },
+
+    updateMapData() {
+      let features = this.returnDroneFeatures(this.allUsersData, this.user);
+
+      map.getSource("drones").setData({
+        type: "FeatureCollection",
+        features,
+      });
+    },
+
+    onKeyDown() {
+      window.addEventListener("keydown", (e) => {
+        // if (!this.isLocationAllowed) {
+          switch (e.keyCode) {
+            case 38: // up
+              this.userLocation[0] += this.howMuchToMove;
+              break;
+
+            case 40: // down
+              this.userLocation[0] -= this.howMuchToMove;
+              break;
+
+            case 37: //left
+              this.userLocation[1] -= this.howMuchToMove;
+              break;
+
+            case 39: //right
+              this.userLocation[1] += this.howMuchToMove;
+          }
+          // this.updateMapData();
+        // }
       });
     },
 
@@ -561,10 +592,10 @@ export default {
   },
 
   created() {
-    window.setInterval(() => {
-      // get location every .5 sec
-      this.getUserLocation();
-    }, 500);
+    // window.setInterval(() => {
+    //   // get location every .5 sec
+    //   this.getUserLocation();
+    // }, 500);
 
     axios
       .get(this.baseUrl + "/id")
@@ -583,7 +614,10 @@ export default {
       zoom: this.zoom,
       maxZoom: this.maxZoom,
       center: [this.userLocation[1], this.userLocation[0]],
+      keyboard: false,
     });
+
+    this.onKeyDown();
 
     // calls loadImage method and load Image giving a name "used in features"
 
